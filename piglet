@@ -1,0 +1,435 @@
+#!/usr/bin/env bash
+
+# piglet - Porkbun DNS API client.
+#
+# This is free and unencumbered software released into the public domain.
+#
+# Anyone is free to copy, modify, publish, use, compile, sell, or
+# distribute this software, either in source code form or as a compiled
+# binary, for any purpose, commercial or non-commercial, and by any
+# means.
+#
+# In jurisdictions that recognize copyright laws, the author or authors
+# of this software dedicate any and all copyright interest in the
+# software to the public domain. We make this dedication for the benefit
+# of the public at large and to the detriment of our heirs and
+# successors. We intend this dedication to be an overt act of
+# relinquishment in perpetuity of all present and future rights to this
+# software under copyright law.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+# EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+# MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
+# IN NO EVENT SHALL THE AUTHORS BE LIABLE FOR ANY CLAIM, DAMAGES OR
+# OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE,
+# ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
+# OTHER DEALINGS IN THE SOFTWARE.
+#
+# For more information, please refer to <http://unlicense.org/>
+
+piglet_version='0.1'
+piglet_conf="${HOME}/.config/piglet.conf"
+
+print_help() {
+    cat <<- EOF
+	Porkbun DNS API client.
+
+	/\\ ____ /\\
+	\\/      \\/  <OINK!>
+	| *(00)* | /
+	\\        /&"
+	 |_|--|_|
+
+	Usage: piglet [-cdjhv] command [arg=value ...]
+
+	Options:
+	    -c, --config    path to configuration file [default: ~/.config/piglet.conf]
+	    -d, --domain    domain name on which operations will be performed.
+	    -j, --json      raw JSON output.
+	    -h, --help      print this help message and exit.
+	    -v, --version   print version and exit.
+
+	Commands:
+	    create      Create a DNS record.
+	    edit        Edit a DNS record by Domain and ID.
+	    delete      Delete a specific DNS record by ID.
+	    retrieve    Retrieve all DNS records or a single record by ID.
+	    config      Setup configuration file.
+
+	Use 'piglet command --help' to see detailed help.
+
+	For more info, please refference to original API Documentation:
+	<https://porkbun.com/api/json/v3/documentation>
+
+	This software is not affiliated with Porkbun LLC <https://porkbun.com/>
+	License: The Unlicense <http://unlicense.org/>
+	EOF
+    exit 0
+}
+
+print_help::create() {
+    cat <<- EOF
+	Create a DNS record.
+
+	Usage: piglet [options...] create [arg=value ...]
+
+	Arguments:
+	    name (optional)
+	        The subdomain for the record being created, not including
+	        the domain itself. Leave blank to create a record on the root domain.
+	        Use '*' to create a wildcard record.
+	    type
+	        The type of record being created. Valid types are: A, MX, CNAME, ALIAS,
+	        TXT, NS, AAAA, SRV, TLSA, CAA.
+	    content
+	        The answer content for the record.
+	    ttl (optional) [default: 600 seconds]
+	        The time to live in seconds for the record 
+	    prio (optional) [default: 0]
+	        The priority of the record for those that support it.
+	EOF
+    exit 0
+}
+
+print_help::edit() {
+    cat <<- EOF
+	Edit a DNS record by Domain and ID.
+
+	Usage: piglet [options...] edit [arg=value ...]
+
+	Arguments:
+	    id
+	        ID of DNS record to edit.
+	    name (optional)
+	        The subdomain for the record being created, not including
+	        the domain itself. Leave blank to create a record on the root domain.
+	        Use '*' to create a wildcard record.
+	    type
+	        The type of record being created. Valid types are: A, MX, CNAME, ALIAS,
+	        TXT, NS, AAAA, SRV, TLSA, CAA.
+	    content
+	        The answer content for the record.
+	    ttl (optional) [default: 600 seconds]
+	        The time to live in seconds for the record 
+	    prio (optional) [default: 0]
+	        The priority of the record for those that support it.
+	EOF
+    exit 0
+}
+
+print_help::delete() {
+    cat <<- EOF
+	Delete a specific DNS record by Doman and ID..
+
+	Usage: piglet [options...] delete [arg=value ...]
+
+	Arguments:
+	    id
+	        DNS record ID.
+	EOF
+    exit 0
+}
+
+print_help::retrieve() {
+    cat <<- EOF
+	Retrieve all editable DNS records associated with a domain or a single record
+	for a particular record ID.
+
+	Usage: piglet [options...] retrieve [arg=value ...]
+
+	Retrieve options:
+	    -h, --help      print this help message and exit.
+
+	Arguments:
+	    id  (optional)
+	        DNS record ID.
+	EOF
+    exit 0
+}
+
+# ----------------------------------------- #
+#               API methods                 #
+# ----------------------------------------- #
+
+api::create() {
+    # Create DNS record.
+    # See: https://porkbun.com/api/json/v3/documentation#DNS%20Create%20Record
+
+    # Usage: api::create domain name type content ttl prio
+
+    local Domain="$1"
+    local Name="$2"
+    local Type="$3"
+    local Content="$4"
+    local TTL="$5"
+    local Prio="$6"
+
+    curl -sS -X POST https://porkbun.com/api/json/v3/dns/create/$Domain \
+        --data '{
+            "secretapikey": "'"$Secret_API_Key"'",
+            "apikey": "'"$API_Key"'",
+            "name": "'"$Name"'",
+            "type": "'"$Type"'",
+            "content": "'"$Content"'",
+            "ttl": "'"$TTL"'",
+            "prio": "'"$Prio"'"
+        }'
+    echo # just print new line
+}
+
+api::edit() {
+    # Edit DNS record by Domain and ID.
+    # See: https://porkbun.com/api/json/v3/documentation#DNS%20Edit%20Record%20by%20Domain%20and%20ID
+
+    # Usage: api::edit doamin id name type content ttl prio
+
+    local Domain="$1"
+    local ID="$2"
+    local Name="$3"
+    local Type="$4"
+    local Content="$5"
+    local TTL="$6"
+    local Prio="$7"
+
+    curl -sS -X POST https://porkbun.com/api/json/v3/dns/edit/$Domain/$ID \
+        --data '{
+            "secretapikey": "'"$Secret_API_Key"'",
+            "apikey": "'"$API_Key"'",
+            "name": "'"$Name"'",
+            "type": "'"$Type"'",
+            "content": "'"$Content"'",
+            "ttl": "'"$TTL"'",
+            "prio": "'"$Prio"'"
+        }'
+    echo # just print new line
+}
+
+api::delete() {
+    # Delete DNS record.
+    # See: https://porkbun.com/api/json/v3/documentation#DNS%20Delete%20Record%20by%20Domain%20and%20ID
+
+    # Usage: api::delete domain id
+
+    local Domain="$1"
+    local ID="$2"
+
+    curl -sS -X POST https://porkbun.com/api/json/v3/dns/delete/$Domain/$ID \
+        --data '{
+            "secretapikey": "'"$Secret_API_Key"'",
+            "apikey": "'"$API_Key"'"
+        }'
+    echo # just print new line
+}
+
+api::retrieve() {
+    # Retrieve DNS records.
+    # See: https://porkbun.com/api/json/v3/documentation#DNS%20Retrieve%20Records%20by%20Domain%20or%20ID
+
+    # Usage: api::retrieve domain id
+    # Function arguments:
+    #   $1      domain name
+    #   $2      DNS record ID
+
+    local target=
+
+    target="$1"
+    if [[ "$1" && "$2" ]]; then
+        target="${1}/${2}"
+    fi
+
+    curl -sS -X POST https://porkbun.com/api/json/v3/dns/retrieve/$target \
+        --data '{
+            "secretapikey": "'"$Secret_API_Key"'",
+            "apikey": "'"$API_Key"'"
+        }'
+    echo # just print new line
+}
+
+# ----------------------------------------- #
+#               CLI functions               #
+# ----------------------------------------- #
+
+_init_piglet() {
+    # Source configuration file
+    . "$piglet_conf"
+
+    [[ "$API_Key" && "$Secret_API_Key" ]] || {
+        echo "Bad API credentials. Please check the ${piglet_conf}. " \ 
+            "Run 'piglet config' to create new config file." >&2; exit 1
+    }
+    [ "$domain" ] || { echo 'Domain name is not set' >&2; exit 1; }
+}
+
+piglet_config() {
+    echo -e "Enter Porkbun DNS API keys. Press ^C to cancel.\n" \
+        "\bHelp: <https://kb.porkbun.com/article/190-getting-started-with-the-porkbun-dns-api>\n"
+    read -p 'API_Key: ' api_key
+    read -p 'Secret_API_Key: ' secret_api_key
+    cat > "$piglet_conf" <<- EOF
+	# Porkbun DNS API credentials
+	API_Key=$api_key
+	Secret_API_Key=$secret_api_key
+	EOF
+    echo -e "Config saved as $piglet_conf"
+}
+
+piglet_create() {
+    local name= type= content= ttl= prio=
+
+    while (( "$#" )); do
+        case "$1" in
+            -c|--config|--config=*) opts "$1" "$2"; piglet_conf="$val"; shift "$sft";;
+            -d|--domain|--domain=*) opts "$1" "$2"; domain="$val"; shift "$sft";;
+            -j|--json)  raw_json=1; shift;;
+            -h|--help) print_help::create;;
+            name=*) name="${1##*=}"; shift;;
+            type=*) type="${1##*=}"; shift;;
+            content=*) content="${1##*=}"; shift;;
+            ttl=*) ttl="${1##*=}"; shift;;
+            prio=*) prio="${1##*=}"; shift;;
+            -*) echo "Unknown option: $1" >&2; exit 1;;
+            *) echo "Unknown key: $1" >&2; exit 1;;
+        esac
+    done
+
+    _init_piglet
+
+    api::create "$domain" "$name" "$type" "$content" "$ttl" "$prio"
+}
+
+piglet_edit() {
+    local record_id= name= type= content= ttl= prio=
+
+    while (( "$#" )); do
+        case "$1" in
+            -c|--config|--config=*) opts "$1" "$2"; piglet_conf="$val"; shift "$sft";;
+            -d|--domain|--domain=*) opts "$1" "$2"; domain="$val"; shift "$sft";;
+            -j|--json)  raw_json=1; shift;;
+            -h|--help) print_help::edit;;
+            id=*) record_id="${1##*=}"; shift;;
+            name=*) name="${1##*=}"; shift;;
+            type=*) type="${1##*=}"; shift;;
+            content=*) content="${1##*=}"; shift;;
+            ttl=*) ttl="${1##*=}"; shift;;
+            prio=*) prio="${1##*=}"; shift;;
+            -*) echo "Unknown option: $1" >&2; exit 1;;
+            *) echo "Unknown key: $1" >&2; exit 1;;
+        esac
+    done
+
+    _init_piglet
+
+    api::edit "$domain" "$record_id" "$name" "$type" "$content" "$ttl" "$prio"
+}
+
+piglet_delete() {
+    local record_id=
+
+    while (( "$#" )); do
+        case "$1" in
+            -c|--config|--config=*) opts "$1" "$2"; piglet_conf="$val"; shift "$sft";;
+            -d|--domain|--domain=*) opts "$1" "$2"; domain="$val"; shift "$sft";;
+            -j|--json)  raw_json=1; shift;;
+            -h|--help) print_help::delete;;
+            id=*) record_id="${1##*=}"; shift;;
+            -*) echo "Unknown option: $1" >&2; exit 1;;
+            *) echo "Unknown key: $1" >&2; exit 1;;
+        esac
+    done
+
+    _init_piglet
+
+    api::delete "$domain" "$record_id"
+}
+
+piglet_retrieve() {
+    local json_out= record_id=
+
+    while (( "$#" )); do
+        case "$1" in
+            -c|--config|--config=*) opts "$1" "$2"; piglet_conf="$val"; shift "$sft";;
+            -d|--domain|--domain=*) opts "$1" "$2"; domain="$val"; shift "$sft";;
+            -j|--json)  raw_json=1; shift;;
+            -h|--help) print_help::retrieve;;
+            id=*) record_id="${1##*=}"; shift;;
+            -*) echo "Unknown option: $1" >&2; exit 1;;
+            *) echo "Unknown key: $1" >&2; exit 1;;
+        esac
+    done
+
+    _init_piglet
+
+    json_out="$(api::retrieve "$domain" "$record_id")"
+
+    if ! hash jq 2>/dev/null; then
+        raw_json=1
+        echo -e "Install jq to enable table view."
+    fi
+
+    if [ "$raw_json" ]; then
+        echo "$json_out"
+    else
+        # Print table
+        echo "$json_out" | jq -r '.records[] | .id,.name,.type,.content,.ttl,.prio' |
+            awk '{print;} NR%6==0 {print "|";}' | tr '\n' ' ' | tr '|' '\n' |
+            awk 'BEGIN {print "ID NAME TYPE CONTENT TTL PRIO"} {print $0}' | column -t
+    fi
+}
+
+# ----------------------------------------- #
+#               Args parser                 #
+# ----------------------------------------- #
+
+opts() {
+    # GNU-style CLI options parser.
+
+    # Parse --opt VAL and --opt=VAL options.
+    # Requires 2 arguments: $1, $2.
+    # Returns:
+    #   $opt - option name.
+    #   $val - option value.
+    #   $sft - value for shift.
+
+    if [[ "$1" =~ .+=.+ ]]; then
+        opt="${1%%=*}"; val="${1#*=}"; sft=1
+    elif [[ ! "$1" =~ .+=$ ]] && \
+         [ "$2" ] && [ "${2:0:1}" != "-" ]
+    then
+        opt="$1"; val="$2"; sft=2
+    else
+        opt="$1"
+        if [[ "$1" =~ .+=$ ]]; then opt="${1:0: -1}"; fi
+        echo "Missing argument for $opt" >& /dev/null; exit 1
+    fi
+}
+
+[[ "$@" ]] || print_help
+
+# Split combined short options, e.g. '-abc' to '-a' '-b' '-c'
+for args in "$@"; do
+    shift
+    case "$args" in
+        --*) set -- "$@" "$args";;  # save long options
+        -*) args="$(echo "${args:1}" | grep -o . | xargs -I {} echo -n '-{} ')"
+            set -- "$@" $args;;
+        *) set -- "$@" "$args";;  # save positional arguments
+    esac
+done
+
+# Final arguments parser
+while (( "$#" )); do
+    case "$1" in
+        -c|--config|--config=*) opts "$1" "$2"; piglet_conf="$val"; shift "$sft";;
+        -d|--domain|--domain=*) opts "$1" "$2"; domain="$val"; shift "$sft";;
+        -j|--json)  raw_json=1; shift;;
+        -h|--help) print_help;;
+        -v|--version) echo $piglet_version; exit 0;;
+        create) shift; piglet_create "$@"; shift "$#";;
+        edit) shift; piglet_edit "$@"; shift "$#";;
+        delete) shift; piglet_delete "$@"; shift "$#";;
+        retrieve) shift; piglet_retrieve "$@"; shift "$#";;
+        config) piglet_config; exit "$?";;
+        -*) echo "Unknown option: $1" >&2; exit 1;;
+        *) echo "Unknown command: $1" >&2; exit 1;;
+    esac
+done
