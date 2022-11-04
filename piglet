@@ -27,7 +27,7 @@
 #
 # For more information, please refer to <http://unlicense.org/>
 
-piglet_version='0.1.1'
+piglet_version='0.1.2'
 piglet_conf="${HOME}/.config/piglet.conf"
 
 print_help() {
@@ -267,11 +267,11 @@ piglet_create() {
             -d|--domain|--domain=*) opts "$1" "$2"; domain="$val"; shift "$sft";;
             -j|--json)  raw_json=1; shift;;
             -h|--help) print_help_create;;
-            name=*) name="${1##*=}"; shift;;
-            type=*) type="${1##*=}"; shift;;
-            content=*) content="${1##*=}"; shift;;
-            ttl=*) ttl="${1##*=}"; shift;;
-            prio=*) prio="${1##*=}"; shift;;
+            name=*) name="${1#*=}"; shift;;
+            type=*) type="${1#*=}"; shift;;
+            content=*) content="${1#*=}"; shift;;
+            ttl=*) ttl="${1#*=}"; shift;;
+            prio=*) prio="${1#*=}"; shift;;
             -*) echo "Unknown option: $1" >&2; exit 1;;
             *) echo "Unknown key: $1" >&2; exit 1;;
         esac
@@ -289,12 +289,12 @@ piglet_edit() {
             -d|--domain|--domain=*) opts "$1" "$2"; domain="$val"; shift "$sft";;
             -j|--json)  raw_json=1; shift;;
             -h|--help) print_help_edit;;
-            id=*) record_id="${1##*=}"; shift;;
-            name=*) name="${1##*=}"; shift;;
-            type=*) type="${1##*=}"; shift;;
-            content=*) content="${1##*=}"; shift;;
-            ttl=*) ttl="${1##*=}"; shift;;
-            prio=*) prio="${1##*=}"; shift;;
+            id=*) record_id="${1#*=}"; shift;;
+            name=*) name="${1#*=}"; shift;;
+            type=*) type="${1#*=}"; shift;;
+            content=*) content="${1#*=}"; shift;;
+            ttl=*) ttl="${1#*=}"; shift;;
+            prio=*) prio="${1#*=}"; shift;;
             -*) echo "Unknown option: $1" >&2; exit 1;;
             *) echo "Unknown key: $1" >&2; exit 1;;
         esac
@@ -312,7 +312,7 @@ piglet_delete() {
             -d|--domain|--domain=*) opts "$1" "$2"; domain="$val"; shift "$sft";;
             -j|--json)  raw_json=1; shift;;
             -h|--help) print_help_delete;;
-            id=*) record_id="${1##*=}"; shift;;
+            id=*) record_id="${1#*=}"; shift;;
             -*) echo "Unknown option: $1" >&2; exit 1;;
             *) echo "Unknown key: $1" >&2; exit 1;;
         esac
@@ -330,7 +330,7 @@ piglet_retrieve() {
             -d|--domain|--domain=*) opts "$1" "$2"; domain="$val"; shift "$sft";;
             -j|--json)  raw_json=1; shift;;
             -h|--help) print_help_retrieve;;
-            id=*) record_id="${1##*=}"; shift;;
+            id=*) record_id="${1#*=}"; shift;;
             -*) echo "Unknown option: $1" >&2; exit 1;;
             *) echo "Unknown key: $1" >&2; exit 1;;
         esac
@@ -369,7 +369,7 @@ opts() {
     #   $val - option value.
     #   $sft - value for shift.
 
-    opt="${1%%=*}"; val="${1##*=}"; sft=1
+    opt="${1%%=*}"; val="${1#*=}"; sft=1
 
     if [ "$opt" = "$val" ]; then
         if [ -n "$2" ] && [ "$(echo "$2" | cut -c1-1)" != "-" ]; then
