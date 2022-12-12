@@ -27,7 +27,7 @@
 #
 # For more information, please refer to <http://unlicense.org/>
 
-piglet_version='0.1.2'
+piglet_version='0.1.3'
 piglet_conf="${HOME}/.config/piglet.conf"
 
 print_help() {
@@ -64,7 +64,6 @@ For more info, please refference to original API Documentation:
 This software is not affiliated with Porkbun LLC <https://porkbun.com/>
 License: The Unlicense <http://unlicense.org/>
 EOF
-    exit 0
 }
 
 print_help_create() {
@@ -88,7 +87,6 @@ Arguments:
     prio (optional) [default: 0]
         The priority of the record for those that support it.
 EOF
-    exit 0
 }
 
 print_help_edit() {
@@ -114,7 +112,6 @@ Arguments:
     prio (optional) [default: 0]
         The priority of the record for those that support it.
 EOF
-    exit 0
 }
 
 print_help_delete() {
@@ -127,7 +124,6 @@ Arguments:
     id
         DNS record ID.
 EOF
-    exit 0
 }
 
 print_help_retrieve() {
@@ -137,14 +133,13 @@ for a particular record ID.
 
 Usage: piglet [options...] retrieve [arg=value ...]
 
-Retrieve options:
-    -h, --help      print this help message and exit.
+Options:
+    -l, --limit     line length limit for table view [default: 36]
 
 Arguments:
     id  (optional)
         DNS record ID.
 EOF
-    exit 0
 }
 
 # ----------------------------------------- #
@@ -249,8 +244,8 @@ piglet_config() {
         "Enter Porkbun DNS API keys. Press ^C to cancel." \
         "Help: https://kb.porkbun.com/article/190-getting-started-with-the-porkbun-dns-api"
 
-    printf '%s ' 'API_Key:'; read -r api_key
-    printf '%s ' 'Secret_API_Key:'; read -r secret_api_key
+    printf 'API_Key: '; read -r api_key
+    printf 'Secret_API_Key: '; read -r secret_api_key
 
     cat > "$piglet_conf" <<- EOF
 # Porkbun DNS API credentials
@@ -263,17 +258,50 @@ EOF
 piglet_create() {
     while [ "$#" -ne 0 ]; do
         case "$1" in
-            -c|--config|--config=*) opts "$1" "$2"; piglet_conf="$val"; shift "$sft";;
-            -d|--domain|--domain=*) opts "$1" "$2"; domain="$val"; shift "$sft";;
-            -j|--json)  raw_json=1; shift;;
-            -h|--help) print_help_create;;
-            name=*) name="${1#*=}"; shift;;
-            type=*) type="${1#*=}"; shift;;
-            content=*) content="${1#*=}"; shift;;
-            ttl=*) ttl="${1#*=}"; shift;;
-            prio=*) prio="${1#*=}"; shift;;
-            -*) echo "Unknown option: $1" >&2; exit 1;;
-            *) echo "Unknown key: $1" >&2; exit 1;;
+            -c|--config|--config=*)
+                opts "$1" "$2"
+                piglet_conf="$val"
+                shift "$sft"
+                ;;
+            -d|--domain|--domain=*)
+                opts "$1" "$2"
+                domain="$val"
+                shift "$sft"
+                ;;
+            -j|--json)
+                raw_json=1
+                shift;;
+            -h|--help)
+                print_help_create
+                exit 0
+                ;;
+            name=*)
+                name="${1#*=}"
+                shift
+                ;;
+            type=*)
+                type="${1#*=}"
+                shift
+                ;;
+            content=*)
+                content="${1#*=}"
+                shift
+                ;;
+            ttl=*)
+                ttl="${1#*=}"
+                shift
+                ;;
+            prio=*)
+                prio="${1#*=}"
+                shift
+                ;;
+            -*)
+                echo "Unknown option: $1" >&2
+                exit 1
+                ;;
+            *)
+                echo "Unknown key: $1" >&2
+                exit 1
         esac
     done
 
@@ -285,18 +313,55 @@ piglet_create() {
 piglet_edit() {
     while [ "$#" -ne 0 ]; do
         case "$1" in
-            -c|--config|--config=*) opts "$1" "$2"; piglet_conf="$val"; shift "$sft";;
-            -d|--domain|--domain=*) opts "$1" "$2"; domain="$val"; shift "$sft";;
-            -j|--json)  raw_json=1; shift;;
-            -h|--help) print_help_edit;;
-            id=*) record_id="${1#*=}"; shift;;
-            name=*) name="${1#*=}"; shift;;
-            type=*) type="${1#*=}"; shift;;
-            content=*) content="${1#*=}"; shift;;
-            ttl=*) ttl="${1#*=}"; shift;;
-            prio=*) prio="${1#*=}"; shift;;
-            -*) echo "Unknown option: $1" >&2; exit 1;;
-            *) echo "Unknown key: $1" >&2; exit 1;;
+            -c|--config|--config=*)
+                opts "$1" "$2"
+                piglet_conf="$val"
+                shift "$sft"
+                ;;
+            -d|--domain|--domain=*)
+                opts "$1" "$2"
+                domain="$val"
+                shift "$sft"
+                ;;
+            -j|--json)
+                raw_json=1
+                shift
+                ;;
+            -h|--help)
+                print_help_edit
+                exit 0
+                ;;
+            id=*)
+                record_id="${1#*=}"
+                shift
+                ;;
+            name=*)
+                name="${1#*=}"
+                shift
+                ;;
+            type=*)
+                type="${1#*=}"
+                shift
+                ;;
+            content=*)
+                content="${1#*=}"
+                shift
+                ;;
+            ttl=*)
+                ttl="${1#*=}"
+                shift
+                ;;
+            prio=*)
+                prio="${1#*=}"
+                shift
+                ;;
+            -*)
+                echo "Unknown option: $1" >&2
+                exit 1
+                ;;
+            *)
+                echo "Unknown key: $1" >&2
+                exit 1
         esac
     done
 
@@ -308,13 +373,35 @@ piglet_edit() {
 piglet_delete() {
     while [ "$#" -ne 0 ]; do
         case "$1" in
-            -c|--config|--config=*) opts "$1" "$2"; piglet_conf="$val"; shift "$sft";;
-            -d|--domain|--domain=*) opts "$1" "$2"; domain="$val"; shift "$sft";;
-            -j|--json)  raw_json=1; shift;;
-            -h|--help) print_help_delete;;
-            id=*) record_id="${1#*=}"; shift;;
-            -*) echo "Unknown option: $1" >&2; exit 1;;
-            *) echo "Unknown key: $1" >&2; exit 1;;
+            -c|--config|--config=*)
+                opts "$1" "$2"
+                piglet_conf="$val"
+                shift "$sft"
+                ;;
+            -d|--domain|--domain=*)
+                opts "$1" "$2"
+                domain="$val"
+                shift "$sft"
+                ;;
+            -j|--json)
+                raw_json=1
+                shift
+                ;;
+            -h|--help)
+                print_help_delete
+                exit 0
+                ;;
+            id=*)
+                record_id="${1#*=}"
+                shift
+                ;;
+            -*)
+                echo "Unknown option: $1" >&2
+                exit 1
+                ;;
+            *)
+                echo "Unknown key: $1" >&2
+                exit 1
         esac
     done
 
@@ -326,13 +413,40 @@ piglet_delete() {
 piglet_retrieve() {
     while [ "$#" -ne 0 ]; do
         case "$1" in
-            -c|--config|--config=*) opts "$1" "$2"; piglet_conf="$val"; shift "$sft";;
-            -d|--domain|--domain=*) opts "$1" "$2"; domain="$val"; shift "$sft";;
-            -j|--json)  raw_json=1; shift;;
-            -h|--help) print_help_retrieve;;
-            id=*) record_id="${1#*=}"; shift;;
-            -*) echo "Unknown option: $1" >&2; exit 1;;
-            *) echo "Unknown key: $1" >&2; exit 1;;
+            -c|--config|--config=*)
+                opts "$1" "$2"
+                piglet_conf="$val"
+                shift "$sft"
+                ;;
+            -d|--domain|--domain=*)
+                opts "$1" "$2"
+                domain="$val"
+                shift "$sft"
+                ;;
+            -l|--limit|--limit=*)
+                opts "$1" "$2"
+                limit="$val"
+                shift "$sft"
+                ;;
+            -j|--json)
+                raw_json=1
+                shift
+                ;;
+            -h|--help)
+                print_help_retrieve
+                exit 0
+                ;;
+            id=*)
+                record_id="${1#*=}"
+                shift
+                ;;
+            -*)
+                echo "Unknown option: $1" >&2
+                exit 1
+                ;;
+            *)
+                echo "Unknown key: $1" >&2
+                exit 1
         esac
     done
 
@@ -345,13 +459,18 @@ piglet_retrieve() {
         echo "Install jq to enable table view." >&2
     fi
 
-    if [ "$raw_json" ]; then
+    if [ -n "$raw_json" ]; then
         echo "$json_out"
     else
         # Print table
-        echo "$json_out" | jq -r '.records[] | .id,.name,.type,.content,.ttl,.prio' |
-            awk '{print;} NR%6==0 {print "|";}' | tr '\n' ' ' | tr '|' '\n' |
-            awk 'BEGIN {print "ID NAME TYPE CONTENT TTL PRIO"} {print $0}' | column -t
+        limit="${limit:-36}"
+        echo "$json_out" |
+            jq -r '.records[] | .id,.name,.type,.content,.ttl,.prio' |
+            awk -v len="$limit" '{if (length >= len) {print substr($0, 0, len) "..."}
+                else {print $0}} NR%6==0 {print "|"}' |
+            tr '\n' '#' | tr '|' '\n' | sed 's/^#//g' |
+            awk 'BEGIN {print "ID#NAME#TYPE#CONTENT#TTL#PRIO"} {print $0}' |
+            column -t -s '#'
     fi
 }
 
@@ -392,28 +511,70 @@ fi
 for args in "$@"; do
     shift
     case "$args" in
-        --*) set -- "$@" "$args";;  # save long options
-        -*) args="$(echo "${args#-}" | grep -o . | xargs -I {} echo -n '-{} ')"
+        --*)
+            set -- "$@" "$args"
+            ;;  # save long options
+        -*)
+            args="$(echo "${args#-}" | grep -o . | xargs -I {} echo -n '-{} ')"
             # shellcheck disable=SC2086
-            set -- "$@" $args;;
-        *) set -- "$@" "$args";;  # save positional arguments
+            set -- "$@" $args
+            ;;
+        *)
+            set -- "$@" "$args"  # save positional arguments
     esac
 done
 
 # Final arguments parser
 while [ "$#" -ne 0 ]; do
     case "$1" in
-        -c|--config|--config=*) opts "$1" "$2"; piglet_conf="$val"; shift "$sft";;
-        -d|--domain|--domain=*) opts "$1" "$2"; domain="$val"; shift "$sft";;
-        -j|--json)  raw_json=1; shift;;
-        -h|--help) print_help;;
-        -v|--version) echo $piglet_version; exit 0;;
-        create) shift; piglet_create "$@"; shift "$#";;
-        edit) shift; piglet_edit "$@"; shift "$#";;
-        delete) shift; piglet_delete "$@"; shift "$#";;
-        retrieve) shift; piglet_retrieve "$@"; shift "$#";;
-        config) piglet_config; exit "$?";;
-        -*) echo "Unknown option: $1" >&2; exit 1;;
-        *) echo "Unknown command: $1" >&2; exit 1;;
+        -c|--config|--config=*)
+            opts "$1" "$2"
+            piglet_conf="$val"
+            shift "$sft"
+            ;;
+        -d|--domain|--domain=*)
+            opts "$1" "$2"
+            domain="$val"
+            shift "$sft"
+            ;;
+        -j|--json)
+            raw_json=1
+            shift
+            ;;
+        -h|--help)
+            print_help
+            exit 0
+            ;;
+        -v|--version)
+            echo $piglet_version
+            exit 0
+            ;;
+        create)
+            shift; piglet_create "$@"
+            shift "$#"
+            ;;
+        edit)
+            shift; piglet_edit "$@"
+            shift "$#"
+            ;;
+        delete)
+            shift; piglet_delete "$@"
+            shift "$#"
+            ;;
+        retrieve)
+            shift; piglet_retrieve "$@"
+            shift "$#"
+            ;;
+        config)
+            piglet_config
+            exit "$?"
+            ;;
+        -*)
+            echo "Unknown option: $1" >&2
+            exit 1
+            ;;
+        *)
+            echo "Unknown command: $1" >&2
+            exit 1
     esac
 done

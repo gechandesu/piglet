@@ -14,7 +14,7 @@ Currently piglet can:
 Just copy `piglet` to your PATH. For example:
 
 ```sh
-cp piglet /usr/local/bin/
+install -Dm755 piglet /usr/local/bin/piglet
 ```
 
 Install [jq](https://stedolan.github.io/jq/) to enable pretty output.
