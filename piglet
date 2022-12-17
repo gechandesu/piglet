@@ -27,11 +27,15 @@
 #
 # For more information, please refer to <http://unlicense.org/>
 
-piglet_version='0.1.3'
+piglet_version='0.2.0'
 piglet_conf="${HOME}/.config/piglet.conf"
+piglet_conf_dir="${HOME}/.config/piglet"
+piglet_conf_alt="$piglet_conf_dir/piglet.conf"
+
+[ -f "$piglet_conf_alt" ] && piglet_conf="$piglet_conf_alt"
 
 print_help() {
-cat <<- 'EOF'
+    cat <<- 'EOF'
 Porkbun DNS API client.
 
 /\ ____ /\
@@ -40,7 +44,7 @@ Porkbun DNS API client.
 \        /&"
  |_|--|_|
 
-Usage: piglet [-cdjhv] command [arg=value ...]
+Usage: piglet [-cdjhv] command <domain> [arg=value ...]
 
 Options:
     -c, --config    path to configuration file [default: ~/.config/piglet.conf]
@@ -237,6 +241,15 @@ _init_piglet() {
     fi
 }
 
+split_name() {
+    if [ "$(echo "$1" | tr . ' ' | wc -w)" -gt 2 ]; then
+        name="$(echo "$1" | awk -F. '{NF-=2} 1' | sed 's/ /\./g')"
+        domain="$(echo "$1" | awk -F. 'END {print $(NF-1), $NF}' | sed 's/ /\./g')"
+    else
+        domain="$1"
+    fi
+}
+
 piglet_config() {
     mkdir -p "$HOME"/.config
 
@@ -247,12 +260,13 @@ piglet_config() {
     printf 'API_Key: '; read -r api_key
     printf 'Secret_API_Key: '; read -r secret_api_key
 
-    cat > "$piglet_conf" <<- EOF
+    mkdir -p "$piglet_conf_dir"
+    cat > "$piglet_conf_alt" <<- EOF
 # Porkbun DNS API credentials
 API_Key=$api_key
 Secret_API_Key=$secret_api_key
 EOF
-    printf 'Config saved as %s\n' "$piglet_conf"
+    printf 'Config saved as %s\n' "$piglet_conf_alt"
 }
 
 piglet_create() {
@@ -299,9 +313,13 @@ piglet_create() {
                 echo "Unknown option: $1" >&2
                 exit 1
                 ;;
-            *)
+            *=*)
                 echo "Unknown key: $1" >&2
                 exit 1
+                ;;
+            *)
+                split_name "$1"
+                shift
         esac
     done
 
@@ -359,9 +377,13 @@ piglet_edit() {
                 echo "Unknown option: $1" >&2
                 exit 1
                 ;;
-            *)
+            *=*)
                 echo "Unknown key: $1" >&2
                 exit 1
+                ;;
+            *)
+                split_name "$1"
+                shift
         esac
     done
 
@@ -399,9 +421,13 @@ piglet_delete() {
                 echo "Unknown option: $1" >&2
                 exit 1
                 ;;
-            *)
+            *=*)
                 echo "Unknown key: $1" >&2
                 exit 1
+                ;;
+            *)
+                split_name "$1"
+                shift
         esac
     done
 
@@ -444,9 +470,13 @@ piglet_retrieve() {
                 echo "Unknown option: $1" >&2
                 exit 1
                 ;;
-            *)
+            *=*)
                 echo "Unknown key: $1" >&2
                 exit 1
+                ;;
+            *)
+                split_name "$1"
+                shift
         esac
     done
 
@@ -574,7 +604,12 @@ while [ "$#" -ne 0 ]; do
             exit 1
             ;;
         *)
-            echo "Unknown command: $1" >&2
-            exit 1
+            if echo "$1" | grep -E '.+\..+' >/dev/null 2>&1; then
+                split_name "$1"
+                shift
+            else
+                echo "Unknown command: $1" >&2
+                exit 1
+            fi
     esac
 done
